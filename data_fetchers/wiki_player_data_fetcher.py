@@ -176,7 +176,11 @@ def get_all_players_data(match_data, already_seen):
 
         player_team_key = "{}_{}".format('_'.join(name.split()), gen_data.h_club_name)
         if player_team_key in already_seen:
-            age = get_age_at_date(match_data.gen_data.date, already_seen[player_team_key]['dob'])
+            if already_seen[player_team_key]['dob'] is not None:
+                age = get_age_at_date(match_data.gen_data.date, already_seen[player_team_key]['dob'])
+            else:
+                age = None
+
             cob = already_seen[player_team_key]['cob']
         else:
             age, cob, dob = get_player_age_cob_dob(player_name, gen_data.h_club_name, gen_data.date)
@@ -193,14 +197,18 @@ def get_all_players_data(match_data, already_seen):
         match_stats_dict = match_data.players_data['home'][name].match_stats_dict
         d_player_data = DetailedPlayerMatchData(name, age, cob, minutes, yellow_cards, red_card,
                         goals, own_goals, penalties_in, penalties_mi, match_stats_dict)
-        d_players_data['away'][name] = d_player_data
+        d_players_data['home'][name] = d_player_data
 
     for player_name in gen_data.a_lineup:
         name = player_name.replace(' (GK)', '').replace(' (C)', '')
 
         player_team_key = "{}_{}".format('_'.join(name.split()), gen_data.a_club_name)
         if player_team_key in already_seen:
-            age = get_age_at_date(match_data.gen_data.date, already_seen[player_team_key]['dob'])
+            if already_seen[player_team_key]['dob'] is not None:
+                age = get_age_at_date(match_data.gen_data.date, already_seen[player_team_key]['dob'])
+            else:
+                age = None
+
             cob = already_seen[player_team_key]['cob']
         else:
             age, cob, dob = get_player_age_cob_dob(player_name, gen_data.a_club_name, gen_data.date)

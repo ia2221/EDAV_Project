@@ -4,6 +4,7 @@ import pickle
 import datetime
 import re
 import csv
+import numpy as np
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from collections import namedtuple, OrderedDict
@@ -44,12 +45,40 @@ DetailedMatchData = namedtuple(
 
 def get_updated_teams_dict(teams_dict):
     csv_reader = csv.reader(open('../data/teams/manual_id_mapping.csv', 'r'))
-    
+
     for row in csv_reader:
         team, team_id = row
         teams_dict[team] = int(team_id) if team_id != '-999' else None
 
     return teams_dict
+
+
+def get_href_to_use(soup, date):
+    v_cal = soup.find('div', {'id': 'version-calendar'})
+    years = v_cal.find_all('section')
+
+    avail = list()
+    hrefs = list()
+    for year in years:
+        for li in year.find_all('li'):
+            try:
+                a_date_str = li.find('strong').get_text()
+                a_date = datetime.datetime.strptime(a_date_str, '%b %Y')
+                avail.append(a_date)
+                href = li.find('a').get('href')
+                base = 'http://sofifa.com'
+                hrefs.append(base + href)
+            except:
+                pass
+
+    my_date = datetime.datetime.strptime(date, '%d/%m/%Y')
+
+    diff = my_date - np.array(avail)
+    valid_indices = np.where(diff >= datetime.timedelta(0))
+    index_to_choose = valid_indices[diff[valid_indices].argmin()][0]
+
+    return hrefs[index_to_choose]
+
 
 def get_team_skills(team_id, date):
     url = 'http://sofifa.com/team/{}'.format(team_id)
@@ -58,21 +87,33 @@ def get_team_skills(team_id, date):
     page_content = driver.execute_script("return document.getElementsByTagName('html')[0].innerHTML")
     soup = BeautifulSoup(page_content, 'html.parser')
 
-    team_skills = dict()
+    href = get_href_to_use(soup, date)
+    driver.get(href)
+    sleep(5)
+    page_content = driver.execute_script("return document.getElementsByTagName('html')[0].innerHTML")
+    soup = BeautifulSoup(page_content, 'html.parser')
+
+    keys = ['Overall', 'Attack', 'Midfield', 'Defense']
+    stats = soup.find('div', {'class': 'stats'})
+    vals = [int(stat.find('span').get_text().strip()) for stat in stats.find_all('td')]
+
+    team_skills = OrderedDict(zip(keys, vals))
 
     return team_skills
 
 
 def get_all_team_skills(gen_data, teams_dict):
     date = gen_data.date
-    team_skills = dict()
-    
-    for i, team_name in enumerate([gen_data.h_club_name, gen_data.a_club_name]):
+    team_skills = OrderedDict()
+
+    for team_name in [gen_data.h_club_name, gen_data.a_club_name]:
         team_id = teams_dict[team_name]
         if team_id is not None:
-            team_skills[team_name] = get_team_skills(teams_id, date)
+            team_skills[team_name] = get_team_skills(team_id, date)
         else:
-            team_skills[team_name] = None
+            keys = ['Overall', 'Attack', 'Midfield', 'Defense']
+            vals = [None, None, None, None]
+            team_skills[team_name] = OrderedDict(zip(keys, vals))
 
     return team_skills
 
@@ -81,17 +122,20 @@ def main():
     teams_dict = get_updated_teams_dict(pickle.load(open('../data/teams/teams_dict.p', 'rb')))
 
     for s_end_year in range(2007, 2016):
+        print("Getting FIFA stats for year {}...".format(s_end_year))
         season_stats = pickle.load(open('../data/season_stats/season_stats_{}.p'.format(s_end_year),'rb'))
         for i in range(5):
             n = len(season_stats[i])
             for j in range(n):
+                print("\t- getting stats for match {}/{} of stage {}/{}".format(j+1,n,i+1,5))
                 gen_data = season_stats[i][j].gen_data
                 players_data = season_stats[i][j].players_data
-                team_skills = get_team_stats(gen_data)
+                team_skills = get_all_team_skills(gen_data, teams_dict)
                 season_stats[i][j] = DetailedMatchData(gen_data, players_data, team_skills)
 
-        # delete old pickle
         # write new pickle
+        pickle.dump(season_stats, open('../data/season_stats/c_season_stats_{}.p'.format(s_end_year), 'wb'))
 
 
-
+if __name__ == '__main__':
+    main()

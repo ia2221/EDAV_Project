@@ -45,7 +45,7 @@ DetailedMatchData = namedtuple(
 
 DetailedPlayerMatchData = namedtuple(
         'DetailedPlayerMatchData',
-        ['name', 'age', 'country_of_birth', 'minutes', 'yellow_cards', 'red_card', 'goals', 'own_goals',
+        ['name', 'age', 'country_of_birth', 'formation', 'minutes', 'yellow_cards', 'red_card', 'goals', 'own_goals',
          'penalties_in', 'penalties_mi', 'match_stats_dict'])
 
 def get_updated_teams_dict(teams_dict):
@@ -151,6 +151,12 @@ def get_player_age_cob_dob(player_name, team_name, date):
         infobox = soup.find('table', {'class':'infobox vcard'})
         dob_str = [tr.find('td').find('span', {'class':'bday'}).get_text() for tr in infobox.find_all('tr') if 'Date of birth' in tr.get_text()][0]
         cob_str = [tr.find('td').get_text().split(', ')[-1] for tr in infobox.find_all('tr') if 'Place of birth' in tr.get_text()][0]
+        try:
+            trs = infobox.find_all('tr')
+            form_idx = [i+1 for i, tr in enumerate(trs) if 'Youth career' in tr.get_text()][0]
+            form_str = trs[form_idx].find('a').get_text()
+        except:
+            form_str = None
 
         age = get_age_at_date(date, dob_str)
 
@@ -161,8 +167,9 @@ def get_player_age_cob_dob(player_name, team_name, date):
         age = None
         cob_str = None
         dob_str = None
+        form_str = None
 
-    return age, cob_str, dob_str
+    return age, cob_str, dob_str, form_str
 
 
 def get_all_players_data(match_data, already_seen):
@@ -171,7 +178,16 @@ def get_all_players_data(match_data, already_seen):
     d_players_data['home'] = OrderedDict()
     d_players_data['away'] = OrderedDict()
 
-    for player_name in gen_data.h_lineup:
+    h_players = gen_data.h_lineup
+    while '' in h_players:
+        h_players.remove('')
+
+    a_players = gen_data.a_lineup
+    while '' in a_players:
+        a_players.remove('')
+
+
+    for player_name in h_players:
         name = player_name.replace(' (GK)', '').replace(' (C)', '')
 
         player_team_key = "{}_{}".format('_'.join(name.split()), gen_data.h_club_name)
@@ -182,10 +198,12 @@ def get_all_players_data(match_data, already_seen):
                 age = None
 
             cob = already_seen[player_team_key]['cob']
+            form_str = already_seen[player_team_key]['form']
         else:
-            age, cob, dob = get_player_age_cob_dob(player_name, gen_data.h_club_name, gen_data.date)
+            age, cob, dob, form_str = get_player_age_cob_dob(player_name, gen_data.h_club_name, gen_data.date)
             already_seen[player_team_key]['dob'] = dob
             already_seen[player_team_key]['cob'] = cob
+            already_seen[player_team_key]['form'] = form_str
 
         minutes = match_data.players_data['home'][name].minutes
         yellow_cards = match_data.players_data['home'][name].yellow_cards
@@ -195,11 +213,11 @@ def get_all_players_data(match_data, already_seen):
         penalties_in = match_data.players_data['home'][name].penalties_in
         penalties_mi = match_data.players_data['home'][name].penalties_mi
         match_stats_dict = match_data.players_data['home'][name].match_stats_dict
-        d_player_data = DetailedPlayerMatchData(name, age, cob, minutes, yellow_cards, red_card,
+        d_player_data = DetailedPlayerMatchData(name, age, cob, form_str, minutes, yellow_cards, red_card,
                         goals, own_goals, penalties_in, penalties_mi, match_stats_dict)
         d_players_data['home'][name] = d_player_data
 
-    for player_name in gen_data.a_lineup:
+    for player_name in a_players:
         name = player_name.replace(' (GK)', '').replace(' (C)', '')
 
         player_team_key = "{}_{}".format('_'.join(name.split()), gen_data.a_club_name)
@@ -210,10 +228,12 @@ def get_all_players_data(match_data, already_seen):
                 age = None
 
             cob = already_seen[player_team_key]['cob']
+            form_str = already_seen[player_team_key]['form']
         else:
-            age, cob, dob = get_player_age_cob_dob(player_name, gen_data.a_club_name, gen_data.date)
+            age, cob, dob, form_str = get_player_age_cob_dob(player_name, gen_data.a_club_name, gen_data.date)
             already_seen[player_team_key]['dob'] = dob
             already_seen[player_team_key]['cob'] = cob
+            already_seen[player_team_key]['form'] = form_str
 
         minutes = match_data.players_data['away'][name].minutes
         yellow_cards = match_data.players_data['away'][name].yellow_cards
@@ -223,7 +243,7 @@ def get_all_players_data(match_data, already_seen):
         penalties_in = match_data.players_data['away'][name].penalties_in
         penalties_mi = match_data.players_data['away'][name].penalties_mi
         match_stats_dict = match_data.players_data['away'][name].match_stats_dict
-        d_player_data = DetailedPlayerMatchData(name, age, cob, minutes, yellow_cards, red_card,
+        d_player_data = DetailedPlayerMatchData(name, age, cob, form_str, minutes, yellow_cards, red_card,
                         goals, own_goals, penalties_in, penalties_mi, match_stats_dict)
         d_players_data['away'][name] = d_player_data
 

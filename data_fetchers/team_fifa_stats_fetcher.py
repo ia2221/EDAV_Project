@@ -121,7 +121,7 @@ def get_all_team_skills(gen_data, teams_dict):
 def main():
     teams_dict = get_updated_teams_dict(pickle.load(open('../data/teams/teams_dict.p', 'rb')))
 
-    for s_end_year in range(2007, 2016):
+    for s_end_year in [2016]:
         print("Getting FIFA stats for year {}...".format(s_end_year))
         season_stats = pickle.load(open('../data/season_stats/season_stats_{}.p'.format(s_end_year),'rb'))
         for i in range(5):

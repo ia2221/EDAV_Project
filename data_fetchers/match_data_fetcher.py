@@ -225,7 +225,7 @@ def get_gen_match_data_from_page_soup(soup):
     return gen_match_data
 
 
-def get_player_match_data(i, player, team_stats):
+def get_player_match_data(i, player, team_stats, events):
     header = team_stats.find('tr')
     stat_names = [th.find('abbr').get('title') if th.find('abbr') is not None
             else th.get_text()
@@ -239,29 +239,29 @@ def get_player_match_data(i, player, team_stats):
 
     age = 25 #TODO: fix this so that the correct age is fetched
 
-    substituted_minute = sorted(map(lambda x: get_event_minute(x), player.find_all('img',
+    substituted_minute = sorted(map(lambda x: get_event_minute(x), events.find_all('img',
         {'alt': 'Substitution'})))
 
     if i <= 10 and substituted_minute:
-        minutes = min(90, substituted_minute)
+        minutes = min(90, substituted_minute[0])
     elif i <= 10 and not substituted_minute:
         minutes = 90
     elif i > 10 and substituted_minute:
-        minutes = abs(90 - substituted_minute)
+        minutes = abs(90 - substituted_minute[0])
     elif i > 10 and not substituted_minute:
         minutes = 0
 
-    yellow_cards = sorted(map(lambda x: get_event_minute(x), player.find_all('img',
+    yellow_cards = sorted(map(lambda x: get_event_minute(x), events.find_all('img',
         {'alt': 'Yellow Card'})))
-    red_card = sorted(map(lambda x: get_event_minute(x), player.find_all('img',
+    red_card = sorted(map(lambda x: get_event_minute(x), events.find_all('img',
         {'alt': 'Red Card'})))
-    goals = sorted(map(lambda x: get_event_minute(x), player.find_all('img',
+    goals = sorted(map(lambda x: get_event_minute(x), events.find_all('img',
         {'alt': 'Goal'})))
-    own_goals = sorted(map(lambda x: get_event_minute(x), player.find_all('img',
+    own_goals = sorted(map(lambda x: get_event_minute(x), events.find_all('img',
         {'src': '/img/icons/event/goals_O.gif'})))
-    penalties_in = sorted(map(lambda x: get_event_minute(x), player.find_all('img',
+    penalties_in = sorted(map(lambda x: get_event_minute(x), events.find_all('img',
         {'src': '/img/icons/event/goals_P.gif'})))
-    penalties_mi = sorted(map(lambda x: get_event_minute(x), player.find_all('img',
+    penalties_mi = sorted(map(lambda x: get_event_minute(x), events.find_all('img',
         {'src': '/img/icons/event/goals_W.gif'})))
 
     player_stats = [td.get_text() for td in trs[i].find_all('td')]
@@ -294,18 +294,21 @@ def get_players_match_data_soup(soup, url):
         tables = p_line.find_all('table', {'class':'pname noboder'})
         if len(tables) == 2:
             h_player, a_player = tables
-            h_player_match_data = get_player_match_data(i, h_player, home_stats)
-            a_player_match_data = get_player_match_data(i, a_player, away_stats)
+            h_events, a_events = p_line.find_all('td', {'class':'l w155 plev'})
+            h_player_match_data = get_player_match_data(i, h_player, home_stats, h_events)
+            a_player_match_data = get_player_match_data(i, a_player, away_stats, a_events)
             home_players_data[h_player_match_data.name] = h_player_match_data
             away_players_data[a_player_match_data.name] = a_player_match_data
         elif len(tables) == 1:
             if lineups[0][i] and not lineups[1][i]:
                 h_player = tables[0]
-                h_player_match_data = get_player_match_data(i, h_player, home_stats)
+                h_events = p_line.find_all('td', {'class':'l w155 plev'})[0]
+                h_player_match_data = get_player_match_data(i, h_player, home_stats, h_events)
                 home_players_data[h_player_match_data.name] = h_player_match_data
             elif lineups[1][i] and not lineups[0][i]:
                 a_player = tables[0]
-                a_player_match_data = get_player_match_data(i, a_player, away_stats)
+                a_events = p_line.find_all('td', {'class':'l w155 plev'})[0]
+                a_player_match_data = get_player_match_data(i, a_player, away_stats, a_events)
                 away_players_data[a_player_match_data.name] = a_player_match_data
         else:
             pass
@@ -360,7 +363,7 @@ def get_matches_data_for_season(s_data):
 def main():
     codes_data = pickle.load(open('../data/codes_data.p', 'rb'))
 
-    for s_end_year in [2016]:
+    for s_end_year in range(2007, 2017):
         season_stats = get_matches_data_for_season(codes_data[s_end_year])
         pickle.dump(season_stats, open('../data/season_stats/season_stats_{}.p'.format(s_end_year), 'wb'))
 

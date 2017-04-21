@@ -42,8 +42,8 @@ DetailedPlayerMatchData = namedtuple(
 def main():
     players_stats = defaultdict(lambda : defaultdict(int))
 
-    for s_end_year in range(2007, 2016):
-        season_stats = pickle.load(open('../data/season_stats/c_season_stats_{}.p'.format(s_end_year),'rb'))
+    for s_end_year in range(2007, 2017):
+        season_stats = pickle.load(open('../data/season_stats/season_stats_{}.p'.format(s_end_year),'rb'))
         for i, _ in enumerate(['Group stage', 'Round of 16', 'Quarter-Finals', 'Semi-Finals', 'Final']):
             n = len(season_stats[i])
             for j in range(n):
@@ -64,6 +64,7 @@ def main():
                         players_stats[h_player]['fouls_commited'] += int(current_p_data.match_stats_dict['Fouls committed'])
                         players_stats[h_player]['fouls_suffered'] += int(current_p_data.match_stats_dict['Fouls suffered'])
                         players_stats[h_player]['offsides'] += int(current_p_data.match_stats_dict['Offsides'])
+                        players_stats[h_player]['pass_pct'] += float(current_p_data.match_stats_dict['Pass completion'][:-1])
                     else:
                         pass
 
@@ -82,6 +83,7 @@ def main():
                         players_stats[a_player]['fouls_commited'] += int(current_p_data.match_stats_dict['Fouls committed'])
                         players_stats[a_player]['fouls_suffered'] += int(current_p_data.match_stats_dict['Fouls suffered'])
                         players_stats[a_player]['offsides'] += int(current_p_data.match_stats_dict['Offsides'])
+                        players_stats[h_player]['pass_pct'] += float(current_p_data.match_stats_dict['Pass completion'][:-1])
                     else:
                         pass
 

@@ -255,9 +255,9 @@ def main():
 
     already_seen = defaultdict(defaultdict)
 
-    for s_end_year in range(2007, 2016):
+    for s_end_year in range(2007, 2017):
         print('Fetching data for season ending in {}'.format(s_end_year))
-        season_stats = pickle.load(open('../data/season_stats/season_stats_{}.p'.format(s_end_year),'rb'))
+        season_stats = pickle.load(open('../data/season_stats/c_season_stats_{}.p'.format(s_end_year),'rb'))
         for i in range(5):
             n = len(season_stats[i])
             for j in range(n):
@@ -266,8 +266,8 @@ def main():
                 d_players_data, already_seen = get_all_players_data(season_stats[i][j], already_seen)
                 season_stats[i][j] = MatchData(gen_data, d_players_data)
 
-    pickle.dump(season_stats, open('../data/season_stats/pd_season_stats_{}.p'.format(s_end_year), 'wb'))
-    pickle.dump(already_seen, open('../data/season_stats/pd_already_seen_{}.p'.format(s_end_year), 'wb'))
+        pickle.dump(season_stats, open('../data/season_stats/pd_season_stats_{}.p'.format(s_end_year), 'wb'))
+        pickle.dump(already_seen, open('../data/season_stats/pd_already_seen_{}.p'.format(s_end_year), 'wb'))
 
 
 if __name__ == '__main__':

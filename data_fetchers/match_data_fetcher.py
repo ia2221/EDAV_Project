@@ -89,7 +89,7 @@ def get_match_stat(soup, stat):
 
 
 def get_event_minute(event):
-    text = event.get_text()
+    text = event.get_text().replace(' ET', '')
     if '+' in text:
         minute = sum(map(int, text.split('+')))
     else:
@@ -163,11 +163,16 @@ def get_match_events(soup):
 
 
 def get_match_result(soup, h_club_name, a_club_name):
-    tables = soup.find_all('table', {'class': 'RS_Content'})
-    table = [table for table in tables if h_club_name in table.get_text()][0]
-    trs = table.find_all('tr')
-    tr = [tr for tr in trs if h_club_name in tr.get_text()][0]
-    result = tr.find('div', {'class':'result clearfix'}).find('a').get_text()
+    try:
+        tables = soup.find_all('table', {'class': 'RS_Content'})
+        table = [table for table in tables if h_club_name in table.get_text()][0]
+        trs = table.find_all('tr')
+        tr = [tr for tr in trs if h_club_name in tr.get_text()][0]
+        result = tr.find('div', {'class':'result clearfix'}).find('a').get_text()
+    except:
+        div = soup.find('div', {'id':'resultsDetails'})
+        result = div.get_text()
+
     return result
 
 
@@ -363,7 +368,7 @@ def get_matches_data_for_season(s_data):
 def main():
     codes_data = pickle.load(open('../data/codes_data.p', 'rb'))
 
-    for s_end_year in range(2007, 2017):
+    for s_end_year in range(2011, 2017):
         season_stats = get_matches_data_for_season(codes_data[s_end_year])
         pickle.dump(season_stats, open('../data/season_stats/season_stats_{}.p'.format(s_end_year), 'wb'))
 

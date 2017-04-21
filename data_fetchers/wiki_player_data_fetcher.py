@@ -153,8 +153,19 @@ def get_player_age_cob_dob(player_name, team_name, date):
         cob_str = [tr.find('td').get_text().split(', ')[-1] for tr in infobox.find_all('tr') if 'Place of birth' in tr.get_text()][0]
         try:
             trs = infobox.find_all('tr')
-            form_idx = [i+1 for i, tr in enumerate(trs) if 'Youth career' in tr.get_text()][0]
-            form_str = trs[form_idx].find('a').get_text()
+            start_idx = [i+1 for i, tr in enumerate(trs) if 'Youth career' in tr.get_text()][0]
+            end_idx = [i for i, tr in enumerate(trs) if 'Senior career' in tr.get_text()][0]
+            places = list()
+            for tr in trs[start_idx:end_idx]:
+                ys, ye = list(map(int, tr.find('th').get_text().split('–')))
+                duration = ye - ys
+                academy = tr.find('td').get_text()
+                places.append((academy, duration))
+
+            places_dict = dict(places)
+            form_idx = np.argmax(np.array(list(places_dict.values())))
+
+            form_str = list(places_dict.keys())[form_idx]
         except:
             form_str = None
 
